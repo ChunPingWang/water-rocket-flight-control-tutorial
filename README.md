@@ -128,24 +128,23 @@ pio0->txf[1] = 0;
 
 ---
 
-### 3.2 PIO 狀態機：伺服機控制 (`servo.pio`)
+### 3.2 PIO 狀態機：伺服機控制（實際使用 `blink_program`）
 
-```pio
-.program servo
-.wrap_target
-    pull noblock       ; 從 TX FIFO 取新的脈衝寬度值
-    out y, 32
-    mov x, y
-    set pins, 1        ; 脈衝 HIGH（伺服機量測此持續時間）
-lp1:
-    jmp x-- lp1        ; 倒數 → 決定脈衝寬度（1ms ~ 2ms）
-    mov x, y
-    set pins, 0        ; 脈衝 LOW
-lp2:
-    nop [5]            ; 延長 OFF 時間（產生 50~100Hz 週期）
-    jmp x-- lp2
-    mov x, y
-.wrap
+> **重要說明**：專案雖附有 `servo.pio`，但主程式 `Rocket_Computer.c` **只 include `blink.pio.h`**，伺服機實際由 `blink_program` 驅動。`servo.pio` 是未完成的備用設計，兩者的脈衝頻率有顯著差異（見下表）。
+
+| 程式 | ON 時間 | OFF 時間 | 脈衝頻率（MIDPOINT） | 狀態 |
+|------|---------|---------|---------------------|------|
+| `blink.pio`（**實際使用**） | x ticks | x ticks（對稱） | ≈ **333 Hz** | ✅ 執行中 |
+| `servo.pio`（未使用） | x ticks | ≈ 7×x ticks（`nop [5]`）| ≈ **83 Hz** | ❌ 未載入 |
+
+兩者脈衝**寬度**相同（同樣的 ticks → 同樣的角度），但**頻率**不同。SG90 標準為 50Hz，但多數數位伺服在 333Hz 下仍可正常工作；這是 V1 的已知設計取捨。
+
+**`blink.pio` 用於伺服時的計時分析**：
+
+```
+ON 時間  = SERVO_MIDPOINT / 125MHz = 187500 / 125e6 = 1.5ms ✓
+OFF 時間 = SERVO_MIDPOINT / 125MHz = 187500 / 125e6 = 1.5ms
+週期     = 3ms → 頻率 ≈ 333Hz（高於標準 50Hz，但 SG90 實測可行）
 ```
 
 **伺服機脈衝時序原理**：
@@ -161,22 +160,23 @@ lp2:
   ←   2ms    →← 約 18ms OFF ──────────→   ← 全右（+90°）
 
 125MHz 時脈下：
-  1ms  = 125,000 ticks   → finPos 最小值
+  1ms   = 125,000 ticks  → finPos 最小值
   1.5ms = 187,500 ticks  → SERVO_MIDPOINT（中點）
-  2ms  = 250,000 ticks   → finPos 最大值
+  2ms   = 250,000 ticks  → finPos 最大值
 ```
 
-**主程式中的伺服初始化**（注意：實際使用 `blink_program_init`，兩者組合語言邏輯等效）：
+**主程式中的伺服初始化**（載入 `blink_program`，非 `servo_program`）：
 
 ```c
 PIO pioServo = pio1;
+// 注意：載入 blink_program，servo.pio 雖有產生 header 但未被 include 或使用
 uint offset = pio_add_program(pioServo, &blink_program);
 
 // 初始化 4 個伺服機 SM，全部設定為中點
-servo(pioServo, 0, offset, SERVO_X1_PIN, 3);  // SM0 → GPIO2 → X軸伺服1
-servo(pioServo, 1, offset, SERVO_X2_PIN, 3);  // SM1 → GPIO3 → X軸伺服2
-servo(pioServo, 2, offset, SERVO_Y1_PIN, 3);  // SM2 → GPIO4 → Y軸伺服1
-servo(pioServo, 3, offset, SERVO_Y2_PIN, 3);  // SM3 → GPIO5 → Y軸伺服2
+servo(pioServo, 0, offset, SERVO_X1_PIN, 3);  // SM0 → GPIO2 → X 軸伺服1
+servo(pioServo, 1, offset, SERVO_X2_PIN, 3);  // SM1 → GPIO3 → X 軸伺服2
+servo(pioServo, 2, offset, SERVO_Y1_PIN, 3);  // SM2 → GPIO4 → Y 軸伺服1
+servo(pioServo, 3, offset, SERVO_Y2_PIN, 3);  // SM3 → GPIO5 → Y 軸伺服2
 
 // servo() 函式本質上是：
 void servo(PIO pio, uint sm, uint offset, uint pin, uint freq) {
@@ -212,7 +212,9 @@ void bno055_init(void) {
     // 暫存器 0x42 (AXIS_MAP_SIGN)   = 0x00 → 所有軸正方向
 
     // 4. 單位設定（暫存器 0x3B = 0x00）
-    // Windows 方向、°F、m/s²、度/秒、公尺
+    // Windows 方向、°C（bit4=0 → Celsius）、m/s²、Dps、公尺
+    // 注意：原始碼的 comment 寫「fahrenheit」有誤，實際設定 0x00 為 Celsius
+    // f_temperatureIMU 的 °C→°F 轉換只用於串列顯示，SD 卡儲存的是原始 °C
 
     // 5. 設定操作模式為 NDOF（暫存器 0x3D = 0x0C）
     // NDOF = 9-DOF 感測器融合：加速計 + 陀螺儀 + 磁力計 → 卡爾曼濾波
@@ -477,15 +479,24 @@ GPIO13 (Pin 17) ────────▶ CS
 
 Pi Pico                    SG90 伺服機（×4）
 ─────────                  ──────────────────
-5V (Pin 40) ────────────▶ 紅線（VCC）[所有伺服共用]
-GND ────────────────────▶ 棕線（GND）[所有伺服共用]
+VSYS (Pin 39) ──────────▶ 紅線（VCC）[所有伺服共用]  ← 電池直供 3.7~4.2V
+GND  (Pin 38) ──────────▶ 棕線（GND）[所有伺服共用]
 GPIO2 ──────────────────▶ 橘線（訊號）X1
 GPIO3 ──────────────────▶ 橘線（訊號）X2
 GPIO4 ──────────────────▶ 橘線（訊號）Y1
 GPIO5 ──────────────────▶ 橘線（訊號）Y2
+
+Pi Pico                    LED + 錄製開關
+─────────                  ────────────────
+GPIO7 (Pin 10) ─[330Ω]──▶ 黃色 LED（狀態）→ GND
+GPIO6 (Pin 9)  ─[330Ω]──▶ 紅色 LED（錄製）→ GND
+3.3V  (Pin 36) ─────────▶ 錄製開關 → GPIO1 (Pin 2)  [開關另端接 GND]
 ```
 
-> **注意**：伺服機使用 5V 供電（Pi Pico VSYS/VBUS），但訊號線為 3.3V，SG90 可直接接受。
+> **電源注意**：
+> - `VBUS (Pin 40)` 只在 USB 插入時才有 5V，電池飛行時為 0V，**不可用於伺服機供電**
+> - `VSYS (Pin 39)` 直接連接 LiPo 電池（3.7V 標稱 / 4.2V 滿電），SG90 可在 3.5~6V 範圍工作
+> - 訊號線為 3.3V，SG90 可直接接受（無需電平轉換）
 
 ---
 
