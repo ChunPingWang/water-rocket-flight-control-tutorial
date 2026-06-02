@@ -506,20 +506,34 @@ GPIO6 (Pin 9)  ─[330Ω]──▶ 紅色 LED（錄製）→ GND
 
 ## 5. 電路圖
 
-> **Fritzing 電路圖檔**：[`fritzing/water_rocket_flight_computer.fzz`](./fritzing/water_rocket_flight_computer.fzz)
->
-> 用 [Fritzing](https://fritzing.org/) 開啟，可看到完整麵包板接線圖。檔案內已內嵌 Pi Pico 零件與所有自訂模組，不需額外安裝零件即可開啟。
->
-> | 元件 | 數量 | Fritzing moduleId |
-> |------|------|-------------------|
-> | Raspberry Pi Pico | 1 | `rpi_pico-tht_1` |
-> | BNO055 IMU | 1 | 自訂（含於 .fzz）|
-> | BMP390 氣壓計 | 1 | 自訂（含於 .fzz）|
-> | MicroSD 模組 | 1 | 自訂（含於 .fzz）|
-> | SG90 伺服機 | 4 | 自訂（含於 .fzz）|
-> | 5mm LED（紅/黃）| 2 | `5mmColorLEDModuleID` |
-> | 330Ω 電阻 | 2 | `ResistorModuleID` |
-> | 錄製開關 | 1 | `33b94ebdb1ef4e7cf0f8425956cfca60` |
+### 電路接線圖預覽
+
+![電路接線圖](./fritzing/water_rocket_schematic.svg)
+
+> 色碼說明：**青色** = SPI（SD卡）、**藍色** = I2C（感測器）、**橘色** = PIO PWM（伺服機）、**紅色** = 電源/LED、**綠色** = 3V3、**灰虛線** = GPS（停用）
+
+---
+
+### 檔案資源
+
+| 檔案 | 說明 |
+|------|------|
+| [`fritzing/water_rocket_schematic.svg`](./fritzing/water_rocket_schematic.svg) | 完整接線圖（SVG，可直接在瀏覽器開啟）|
+| [`fritzing/water_rocket_flight_computer.fzz`](./fritzing/water_rocket_flight_computer.fzz) | Fritzing 麵包板電路圖（用 [Fritzing](https://fritzing.org/) 開啟）|
+| [`fritzing/generate_schematic.py`](./fritzing/generate_schematic.py) | 重新產生 SVG 的 Python 腳本 |
+
+**Fritzing .fzz 元件清單：**
+
+| 元件 | 數量 | Fritzing moduleId |
+|------|------|-------------------|
+| Raspberry Pi Pico | 1 | `rpi_pico-tht_1` |
+| BNO055 IMU | 1 | 自訂（含於 .fzz）|
+| BMP390 氣壓計 | 1 | 自訂（含於 .fzz）|
+| MicroSD 模組 | 1 | 自訂（含於 .fzz）|
+| SG90 伺服機 | 4 | 自訂（含於 .fzz）|
+| 5mm LED（紅/黃）| 2 | `5mmColorLEDModuleID` |
+| 330Ω 電阻 | 2 | `ResistorModuleID` |
+| 錄製開關 | 1 | `33b94ebdb1ef4e7cf0f8425956cfca60` |
 
 ---
 
