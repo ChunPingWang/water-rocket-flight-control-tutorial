@@ -508,7 +508,7 @@ GPIO6 (Pin 9)  ─[330Ω]──▶ 紅色 LED（錄製）→ GND
 
 ### 電路接線圖預覽
 
-![電路接線圖](./fritzing/water_rocket_schematic.svg)
+![電路接線圖](./fritzing/water_rocket_schematic.png)
 
 > 色碼說明：**青色** = SPI（SD卡）、**藍色** = I2C（感測器）、**橘色** = PIO PWM（伺服機）、**紅色** = 電源/LED、**綠色** = 3V3、**灰虛線** = GPS（停用）
 
@@ -518,7 +518,8 @@ GPIO6 (Pin 9)  ─[330Ω]──▶ 紅色 LED（錄製）→ GND
 
 | 檔案 | 說明 |
 |------|------|
-| [`fritzing/water_rocket_schematic.svg`](./fritzing/water_rocket_schematic.svg) | 完整接線圖（SVG，可直接在瀏覽器開啟）|
+| [`fritzing/water_rocket_schematic.png`](./fritzing/water_rocket_schematic.png) | 完整接線圖預覽（PNG）|
+| [`fritzing/water_rocket_schematic.svg`](./fritzing/water_rocket_schematic.svg) | 完整接線圖向量版（SVG，可縮放）|
 | [`fritzing/water_rocket_flight_computer.fzz`](./fritzing/water_rocket_flight_computer.fzz) | Fritzing 麵包板電路圖（用 [Fritzing](https://fritzing.org/) 開啟）|
 | [`fritzing/generate_schematic.py`](./fritzing/generate_schematic.py) | 重新產生 SVG 的 Python 腳本 |
 
